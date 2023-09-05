@@ -40,7 +40,7 @@ std::string getHeaderString(std::istringstream &headers) {
 
 // FIXME: Is it allowed for fieldName to be null/0 or empty string ? JPCSP seems to ignore it
 static int sceParseHttpResponseHeader(u32 headerAddr, int headerLength, const char *fieldName, u32 valueAddr, u32 valueLengthAddr) {
-	WARN_LOG(SCENET, "UNTESTED sceParseHttpStatusLine(%x, %i, %s, %x, %x[%i]) at %08x", headerAddr, headerLength, fieldName, valueAddr, valueLengthAddr, Memory::Read_U32(valueLengthAddr), currentMIPS->pc);
+	WARN_LOG(SCENET, "UNTESTED sceParseHttpResponseHeader(%x, %i, %s, %x, %x[%i]) at %08x", headerAddr, headerLength, fieldName, valueAddr, valueLengthAddr, Memory::Read_U32(valueLengthAddr), currentMIPS->pc);
 	if (!Memory::IsValidRange(headerAddr, headerLength))
 		return hleLogError(SCENET, -1, "invalid arg");
 
