@@ -49,8 +49,8 @@ static int sceParseHttpResponseHeader(u32 headerAddr, int headerLength, const ch
 
 	// FIXME: Not sure whether valuerAddr can be null or not (in case the game just need to get the size to allocate the value buffer first)
 	// Note: Based on the outputted value address from JPCSP, the address seems to be within the input headers address range, thus no need to allocate output value buffer
-	if (!Memory::IsValidRange(valueAddr, Memory::Read_U32(valueLengthAddr)))
-		return hleLogError(SCENET, -1, "invalid arg");
+	// if (!Memory::IsValidRange(valueAddr, Memory::Read_U32(valueLengthAddr)))
+		// return hleLogError(SCENET, -1, "invalid arg");
 
 	std::string field = "";
 	if (fieldName != nullptr)

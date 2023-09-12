@@ -114,49 +114,61 @@ bool Connection::Connect(int maxTries, double timeout, bool *cancelConnect) {
 				ERROR_LOG(IO, "Bad socket");
 				continue;
 			}
-			fd_util::SetNonBlocking(sock, true);
+			// fd_util::SetNonBlocking(sock, true);
 
 			// Start trying to connect (async with timeout.)
-			connect(sock, possible->ai_addr, (int)possible->ai_addrlen);
-			sockets.push_back(sock);
-			FD_SET(sock, &fds);
-			if (maxfd < sock + 1) {
-				maxfd = sock + 1;
-			}
-		}
-
-		int selectResult = 0;
-		long timeoutHalfSeconds = floor(2 * timeout);
-		while (timeoutHalfSeconds >= 0 && selectResult == 0) {
-			struct timeval tv;
-			tv.tv_sec = 0;
-			if (timeoutHalfSeconds > 0) {
-				// Wait up to 0.5 seconds between cancel checks.
-				tv.tv_usec = 500000;
-			} else {
-				// Wait the remaining <= 0.5 seconds.  Possibly 0, but that's okay.
-				tv.tv_usec = (timeout - floor(2 * timeout) / 2) * 1000000.0;
-			}
-			--timeoutHalfSeconds;
-
-			selectResult = select(maxfd, nullptr, &fds, nullptr, &tv);
-			if (cancelConnect && *cancelConnect) {
+			if(connect(sock, possible->ai_addr, (int)possible->ai_addrlen) == 0) {
+				sockets.push_back(sock);
+				ERROR_LOG(SCENET, "Connected to sock %d", sock);
 				break;
 			}
+			// FD_SET(sock, &fds);
+			// if (maxfd < sock + 1) {
+				// maxfd = sock + 1;
+			// }
 		}
-		if (selectResult > 0) {
-			// Something connected.  Pick the first one that did (if multiple.)
-			for (int sock : sockets) {
-				if ((intptr_t)sock_ == -1 && FD_ISSET(sock, &fds)) {
-					sock_ = sock;
-				} else {
-					closesocket(sock);
-				}
-			}
 
-			// Great, now we're good to go.
-			return true;
+		// int selectResult = 0;
+		// long timeoutHalfSeconds = floor(2 * timeout);
+		// while (timeoutHalfSeconds >= 0 && selectResult == 0) {
+		// 	struct timeval tv;
+		// 	tv.tv_sec = 0;
+		// 	if (timeoutHalfSeconds > 0) {
+		// 		// Wait up to 0.5 seconds between cancel checks.
+		// 		tv.tv_usec = 500000;
+		// 	} else {
+		// 		// Wait the remaining <= 0.5 seconds.  Possibly 0, but that's okay.
+		// 		tv.tv_usec = (timeout - floor(2 * timeout) / 2) * 1000000.0;
+		// 	}
+		// 	--timeoutHalfSeconds;
+
+		// 	selectResult = select(maxfd, nullptr, &fds, nullptr, &tv);
+		// 	if (cancelConnect && *cancelConnect) {
+		// 		break;
+		// 	}
+		// }
+		// if (selectResult > 0) {
+		// Something connected.  Pick the first one that did (if multiple.)
+		// for (int sock : sockets) {
+		// 	if ((intptr_t)sock_ == -1 && FD_ISSET(sock, &fds)) {
+		// 		ERROR_LOG(SCENET, "Got sock %d", sock);
+		// 		sock_ = sock;
+		// 	} else {
+		// 		ERROR_LOG(SCENET, "Closing sock %d", sock);
+		// 		closesocket(sock);
+		// 	}
+		// }
+
+		if(sockets.size() == 0) {
+			ERROR_LOG(SCENET, "NO SOCKETS!");
+			return false;
 		}
+
+		sock_ = sockets[0];
+
+		// Great, now we're good to go.
+		return true;
+		// }
 
 		if (cancelConnect && *cancelConnect) {
 			break;
@@ -321,6 +333,18 @@ int Client::SendRequestWithData(const char *method, const RequestParams &req, co
 		userAgent_.c_str(),
 		req.acceptMime,
 		otherHeaders ? otherHeaders : "");
+
+	ERROR_LOG(SCENET, tpl, method, req.resource.c_str(), httpVersion_,
+		host_.c_str(),
+		userAgent_.c_str(),
+		req.acceptMime,
+		otherHeaders ? otherHeaders : "");
+
+	FILE* file = fopen("data", "w");
+	fwrite(data.c_str(), data.length(), 1, file);
+	fflush(file);
+	fclose(file);
+
 	buffer.Append(data);
 	bool flushed = buffer.FlushSocket(sock(), dataTimeout_, progress->cancelled);
 	if (!flushed) {

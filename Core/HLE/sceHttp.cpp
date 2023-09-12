@@ -225,6 +225,8 @@ int HTTPRequest::sendRequest(u32 postDataPtr, u32 postDataSize) {
 	if (startsWithNoCase(url, "/")) {
 		fullURL = scheme + "://" + hostString + ":" + std::to_string(port) + fullURL;
 	}
+	
+	ERROR_LOG(SCENET, "CONNECTING TO URL %s hostString %s", fullURL.c_str(), hostString.c_str());
 
 	Url fileUrl(fullURL);
 	if (!fileUrl.Valid()) {
@@ -261,8 +263,14 @@ int HTTPRequest::sendRequest(u32 postDataPtr, u32 postDataSize) {
 	net::RequestProgress progress_(&cancelled_);
 	http::RequestParams req(fileUrl.Resource(), "*/*");
 	const char* postData = Memory::GetCharPointer(postDataPtr);
-	if (postDataSize > 0)
+	if (postDataSize > 0) {
 		NotifyMemInfo(MemBlockFlags::READ, postDataPtr, postDataSize, "HttpSendRequest");
+	
+		FILE* f = fopen("postdata", "w");
+		fwrite(postData, postDataSize, 1, f);
+		fflush(f);
+		fclose(f);
+	}
 	int err = client.SendRequestWithData(methodstr.c_str(), req, std::string(postData ? postData : "", postData ? postDataSize : 0), extraHeaders.c_str(), &progress_);
 	if (cancelled_) {
 		return SCE_HTTP_ERROR_ABORTED;
@@ -427,11 +435,12 @@ static int sceHttpReadData(int requestID, u32 dataPtr, u32 dataSize) {
 		u8* data = (u8*)Memory::GetPointerUnchecked(dataPtr);
 		std::string datahex;
 		DataToHexString(10, 0, data, retval, &datahex);
-		DEBUG_LOG(SCENET, "Data Dump (%d bytes):\n%s", retval, datahex.c_str());
+		ERROR_LOG(SCENET, "Data Dump (%d bytes):\n%s", retval, datahex.c_str());
 	}
 
 	// Faking latency to slow down download progressbar, since we currently downloading the full content at once instead of in chunk per sceHttpReadData's dataSize
-	return hleDelayResult(hleLogDebug(SCENET, retval), "fake read data latency", 5000);
+	return retval;
+	// return hleDelayResult(hleLogDebug(SCENET, retval), "fake read data latency", 5000);
 }
 
 // FIXME: JPCSP didn't do anything other than appending the data into internal buffer, does sceHttpSendRequest can be called multiple times before using sceHttpGetStatusCode or sceHttpReadData? any game do this?
@@ -582,7 +591,7 @@ static int sceHttpCreateRequest(int connectionID, int method, const char *path, 
 
 // FIXME: port type is probably u16
 static int sceHttpCreateConnection(int templateID, const char *hostString, const char *scheme, u32 port, int enableKeepalive) {
-	WARN_LOG(SCENET, "UNTESTED sceHttpCreateConnection(%d, %s, %s, %d, %d)", templateID, safe_string(hostString), safe_string(scheme), port, enableKeepalive);
+	ERROR_LOG(SCENET, "UNTESTED sceHttpCreateConnection(%d, %s, %s, %d, %d)", templateID, safe_string(hostString), safe_string(scheme), port, enableKeepalive);
 	std::lock_guard<std::mutex> guard(httpLock);
 	if (templateID <= 0 || templateID > httpObjects.size())
 		return hleLogError(SCENET, SCE_HTTP_ERROR_INVALID_ID, "invalid id");

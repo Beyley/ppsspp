@@ -87,7 +87,10 @@ bool GenericLogEnabled(LogLevel level, LogType type);
 #if defined(_DEBUG) || defined(_WIN32)
 
 // Needs to be an int (and not use the enum) because it's used by the preprocessor!
-#define MAX_LOGLEVEL DEBUG_LEVEL
+// #define MAX_LOGLEVEL DEBUG_LEVEL
+#ifndef MAX_LOGLEVEL
+#define MAX_LOGLEVEL INFO_LEVEL
+#endif // loglevel
 
 #else
 

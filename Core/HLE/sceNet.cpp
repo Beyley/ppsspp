@@ -1396,6 +1396,59 @@ static int sceNetResolverTerm()
 	return 0;
 }
 
+static int sceNetResolverStartNtoA()
+{
+	ERROR_LOG(SCENET, "UNIMPL %s()", __FUNCTION__);
+	return 0;
+}
+
+static int sceNetResolverDelete()
+{
+	ERROR_LOG(SCENET, "UNIMPL %s()", __FUNCTION__);
+	return 0;
+}
+
+static int sceNetResolverCreate()
+{
+	ERROR_LOG(SCENET, "UNIMPL %s()", __FUNCTION__);
+	return 0;
+}
+
+// Address families
+#define	PSP_NET_INET_AF_UNSPEC		0		// unspecified 
+#define	PSP_NET_INET_AF_LOCAL		1		// local to host (pipes, portals) 
+#define	PSP_NET_INET_AF_UNIX		PSP_NET_INET_AF_LOCAL	// backward compatibility 
+#define	PSP_NET_INET_AF_INET		2		// internetwork: UDP, TCP, etc. 
+
+int convertSocketDomainPSP2Host(int domain) {
+	switch (domain) {
+	case PSP_NET_INET_AF_UNSPEC:
+		return AF_UNSPEC;
+	case PSP_NET_INET_AF_LOCAL:
+		return AF_UNIX;
+	case PSP_NET_INET_AF_INET:
+		return AF_INET;
+	}
+	return hleLogError(SCENET, domain, "Unknown Socket Domain");
+}
+
+// TODO: Need to find out whether it's possible to get partial output or not, since Coded Arms Contagion is using a small bufsize(4)
+static u32 sceNetInetInetNtop(int af, u32 srcInAddrPtr, u32 dstBufPtr, u32 bufsize) {
+	WARN_LOG(SCENET, "UNTESTED sceNetInetInetNtop(%i, %08x, %08x, %d)", af, srcInAddrPtr, dstBufPtr, bufsize);
+	if (!Memory::IsValidAddress(srcInAddrPtr)) {
+		return hleLogError(SCENET, 0, "invalid arg");
+	}
+	if (!Memory::IsValidAddress(dstBufPtr) || bufsize < 1/*8*/) { // usually 8 or 16, but Coded Arms Contagion is using bufsize = 4
+		// inetLastErrno = ENOSPC;
+		return hleLogError(SCENET, 0, "invalid arg");
+	}
+
+	if (inet_ntop(convertSocketDomainPSP2Host(af), Memory::GetCharPointer(srcInAddrPtr), (char*)Memory::GetCharPointer(dstBufPtr), bufsize) == NULL) {
+		//return hleLogDebug(SCENET, 0, "invalid arg?"); // Temporarily commented out in case it's allowed to have partial output
+	}
+	return hleLogSuccessX(SCENET, dstBufPtr, "%s", safe_string(Memory::GetCharPointer(dstBufPtr)));
+}
+
 static int sceNetApctlAddInternalHandler(u32 handlerPtr, u32 handlerArg) {
 	ERROR_LOG(SCENET, "UNIMPL %s(%08x, %08x)", __FUNCTION__, handlerPtr, handlerArg);
 	// This seems to be a 2nd kind of handler
@@ -1506,9 +1559,9 @@ const HLEFunction sceNet[] = {
 };
 
 const HLEFunction sceNetResolver[] = {
-	{0X224C5F44, nullptr,                            "sceNetResolverStartNtoA",         '?', ""     },
-	{0X244172AF, nullptr,                            "sceNetResolverCreate",            '?', ""     },
-	{0X94523E09, nullptr,                            "sceNetResolverDelete",            '?', ""     },
+	{0X224C5F44, &WrapI_V<sceNetResolverStartNtoA>,  "sceNetResolverStartNtoA",         '?', ""     },
+	{0X244172AF, &WrapI_V<sceNetResolverCreate>,     "sceNetResolverCreate",            '?', ""     },
+	{0X94523E09, &WrapI_V<sceNetResolverDelete>,     "sceNetResolverDelete",            '?', ""     },
 	{0XF3370E61, &WrapI_V<sceNetResolverInit>,       "sceNetResolverInit",              'i', ""     },
 	{0X808F6063, nullptr,                            "sceNetResolverStop",              '?', ""     },
 	{0X6138194A, &WrapI_V<sceNetResolverTerm>,       "sceNetResolverTerm",              'i', ""     },
@@ -1543,7 +1596,7 @@ const HLEFunction sceNetInet[] = {
 	{0X1A33F9AE, nullptr,                            "sceNetInetBind",                  '?', ""     },
 	{0XB75D5B0A, &WrapU_C<sceNetInetInetAddr>,       "sceNetInetInetAddr",              'x', "s"    },
 	{0X1BDF5D13, &WrapI_CU<sceNetInetInetAton>,      "sceNetInetInetAton",              'i', "sx"   },
-	{0XD0792666, nullptr,                            "sceNetInetInetNtop",              '?', ""     },
+	{0XD0792666, &WrapU_IUUU<sceNetInetInetNtop>,    "sceNetInetInetNtop",              '?', ""     },
 	{0XE30B8C19, nullptr,                            "sceNetInetInetPton",              '?', ""     },
 	{0X8CA3A97E, nullptr,                            "sceNetInetGetPspError",           '?', ""     },
 	{0XE247B6D6, nullptr,                            "sceNetInetGetpeername",           '?', ""     },

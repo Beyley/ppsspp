@@ -327,6 +327,11 @@ template<u32 func(const char *, u32, u32, u32)> void WrapU_CUUU() {
 	RETURN(retval);
 }
 
+template<int func(const char *, u32, const char *, u32, u32)> void WrapI_CUCUU() {
+	int retval = func(Memory::GetCharPointer(PARAM(0)), PARAM(1), Memory::GetCharPointer(PARAM(2)), PARAM(3), PARAM(4));
+	RETURN(retval);
+}
+
 template<void func(u32, int, u32, int, int)> void WrapV_UIUII() {
 	func(PARAM(0), PARAM(1), PARAM(2), PARAM(3), PARAM(4));
 }
@@ -492,6 +497,11 @@ template<int func(const char *, u32)> void WrapI_CU() {
 	int retval = func(Memory::GetCharPointer(PARAM(0)), PARAM(1));
 	RETURN(retval);
 }
+
+// template<u32 func(int, u32, u32, u32)> void WrapU_IUUU() {
+// 	u32 retval = func(Memory::GetCharPointer(PARAM(0)), PARAM(1), PARAM(2), PARAM(3));
+// 	RETURN(retval);
+// }
 
 template<int func(const char *, u32, int)> void WrapI_CUI() {
 	int retval = func(Memory::GetCharPointer(PARAM(0)), PARAM(1), PARAM(2));

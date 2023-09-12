@@ -5,11 +5,11 @@
 #include "Common/Data/Text/Parsers.h"
 
 extern std::thread::id renderThreadId;
-#if MAX_LOGLEVEL >= DEBUG_LEVEL
+// #if MAX_LOGLEVEL >= DEBUG_LEVEL
 static bool OnRenderThread() {
 	return std::this_thread::get_id() == renderThreadId;
 }
-#endif
+// #endif
 
 void *GLRBuffer::Map(GLBufferStrategy strategy) {
 	_assert_(buffer_ != 0);
